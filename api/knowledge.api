@@ -1,0 +1,124 @@
+// go-zero API 定义文件
+// 这个文件定义了 API 接口规范
+// 可以使用 goctl api go -api knowledge.api -dir . 生成代码
+// 本项目采用手动编写的方式来演示 DDD 结构
+
+syntax = "v1"
+
+info(
+	title: "知识库管理系统 API"
+	desc: "基于 go-zero 和 DDD 的知识库管理系统"
+	author: "demo"
+	version: "v1.0.0"
+)
+
+// ========== 类型定义 ==========
+
+type (
+	// 创建知识库请求
+	CreateKnowledgeBaseRequest {
+		Name        string `json:"name"`
+		Description string `json:"description,optional"`
+	}
+
+	// 更新知识库请求
+	UpdateKnowledgeBaseRequest {
+		Name        string `json:"name"`
+		Description string `json:"description,optional"`
+	}
+
+	// 知识库响应
+	KnowledgeBaseResponse {
+		ID            string         `json:"id"`
+		Name          string         `json:"name"`
+		Description   string         `json:"description"`
+		DocumentCount int            `json:"document_count"`
+		Documents     []DocumentInfo `json:"documents,omitempty"`
+		CreatedAt     string         `json:"created_at"`
+		UpdatedAt     string         `json:"updated_at"`
+	}
+
+	// 知识库列表响应
+	KnowledgeBaseListResponse {
+		Items []KnowledgeBaseResponse `json:"items"`
+		Total int                     `json:"total"`
+	}
+
+	// 添加文档请求
+	AddDocumentRequest {
+		Title   string   `json:"title"`
+		Content string   `json:"content"`
+		Tags    []string `json:"tags,optional"`
+	}
+
+	// 文档信息
+	DocumentInfo {
+		ID              string   `json:"id"`
+		KnowledgeBaseID string   `json:"knowledge_base_id"`
+		Title           string   `json:"title"`
+		Content         string   `json:"content"`
+		Tags            []string `json:"tags"`
+		CreatedAt       string   `json:"created_at"`
+		UpdatedAt       string   `json:"updated_at"`
+	}
+
+	// 文档列表响应
+	DocumentListResponse {
+		Items []DocumentInfo `json:"items"`
+		Total int            `json:"total"`
+	}
+
+	// 通用响应
+	BaseResponse {
+		Code    int         `json:"code"`
+		Message string      `json:"message"`
+		Data    interface{} `json:"data,omitempty"`
+	}
+)
+
+// ========== 服务定义 ==========
+
+@server(
+	prefix: /api/v1
+	group: knowledge
+)
+service knowledge-api {
+	@doc "创建知识库"
+	@handler CreateKnowledgeBase
+	post /knowledge (CreateKnowledgeBaseRequest) returns (BaseResponse)
+
+	@doc "获取知识库列表"
+	@handler ListKnowledgeBases
+	get /knowledge returns (BaseResponse)
+
+	@doc "获取知识库详情"
+	@handler GetKnowledgeBase
+	get /knowledge/:id returns (BaseResponse)
+
+	@doc "更新知识库"
+	@handler UpdateKnowledgeBase
+	put /knowledge/:id (UpdateKnowledgeBaseRequest) returns (BaseResponse)
+
+	@doc "删除知识库"
+	@handler DeleteKnowledgeBase
+	delete /knowledge/:id returns (BaseResponse)
+}
+
+@server(
+	prefix: /api/v1
+	group: document
+)
+service knowledge-api {
+	@doc "添加文档"
+	@handler AddDocument
+	post /knowledge/:id/documents (AddDocumentRequest) returns (BaseResponse)
+
+	@doc "获取文档列表"
+	@handler ListDocuments
+	get /knowledge/:id/documents returns (BaseResponse)
+
+	@doc "删除文档"
+	@handler RemoveDocument
+	delete /knowledge/:id/documents/:doc_id returns (BaseResponse)
+}
+

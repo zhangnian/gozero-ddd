@@ -1,0 +1,38 @@
+# 知识库管理系统配置文件
+# go-zero 使用 YAML 格式的配置文件
+
+# 服务名称
+Name: knowledge-api
+
+# 主机地址
+Host: 0.0.0.0
+
+# 端口号
+Port: 8888
+
+# 日志配置
+Log:
+  # 日志级别: info, error, severe
+  Level: info
+  # 日志模式: console, file
+  Mode: console
+  # 是否显示调用栈
+  KeepDays: 7
+
+# 超时配置（毫秒）
+Timeout: 30000
+
+# 最大请求体大小（字节）
+MaxBytes: 10485760  # 10MB
+
+# 数据库配置（可选，本demo使用内存存储）
+# Database:
+#   Driver: mysql
+#   DSN: "user:password@tcp(localhost:3306)/knowledge?charset=utf8mb4&parseTime=True&loc=Local"
+
+# Redis配置（可选）
+# Redis:
+#   Host: localhost:6379
+#   Password: ""
+#   DB: 0
+
