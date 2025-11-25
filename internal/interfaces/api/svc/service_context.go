@@ -1,6 +1,10 @@
 package svc
 
 import (
+	"log"
+
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
+
 	"gozero-ddd/internal/application/command"
 	"gozero-ddd/internal/application/query"
 	"gozero-ddd/internal/domain/repository"
@@ -37,9 +41,30 @@ type ServiceContext struct {
 
 // NewServiceContext 创建服务上下文
 func NewServiceContext(c config.Config) *ServiceContext {
-	// 初始化仓储（这里使用内存实现，生产环境应使用数据库实现）
-	kbRepo := persistence.NewMemoryKnowledgeBaseRepository()
-	docRepo := persistence.NewMemoryDocumentRepository()
+	var kbRepo repository.KnowledgeBaseRepository
+	var docRepo repository.DocumentRepository
+
+	// 根据配置选择仓储实现
+	if c.UseMemory {
+		// 使用内存仓储（开发测试用）
+		log.Println("📦 使用内存存储")
+		kbRepo = persistence.NewMemoryKnowledgeBaseRepository()
+		docRepo = persistence.NewMemoryDocumentRepository()
+	} else {
+		// 使用 MySQL 仓储（生产环境）
+		log.Println("📦 使用 MySQL 存储")
+		if c.MySQL.DataSource == "" {
+			log.Fatal("❌ MySQL DataSource 未配置")
+		}
+
+		// 创建数据库连接
+		conn := sqlx.NewMysql(c.MySQL.DataSource)
+
+		// 先创建文档仓储
+		docRepo = persistence.NewMysqlDocumentRepository(conn)
+		// 知识库仓储需要文档仓储来加载关联数据
+		kbRepo = persistence.NewMysqlKnowledgeBaseRepository(conn, docRepo)
+	}
 
 	// 初始化领域服务
 	knowledgeService := service.NewKnowledgeService(kbRepo, docRepo)
@@ -67,4 +92,3 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		ListDocumentsHandler:      query.NewListDocumentsHandler(docRepo),
 	}
 }
-
