@@ -45,3 +45,4 @@ CREATE TABLE IF NOT EXISTS documents (
 -- (UUID(), '技术文档', '技术相关的知识库'),
 -- (UUID(), '产品手册', '产品使用说明');
 
+

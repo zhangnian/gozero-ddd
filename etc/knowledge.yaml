@@ -28,10 +28,12 @@ MaxBytes: 10485760  # 10MB
 # 是否使用内存存储（开发测试用，生产环境请设为 false）
 UseMemory: false
 
-# MySQL 配置
+# MySQL 配置 (GORM)
 MySQL:
   # 数据源 DSN 格式: user:password@tcp(host:port)/database?charset=utf8mb4&parseTime=True&loc=Local
   DataSource: "root:123456@tcp(127.0.0.1:3306)/knowledge_db?charset=utf8mb4&parseTime=True&loc=Local"
+  # 是否自动迁移表结构（开发环境可设为 true，生产环境建议设为 false 使用手动迁移）
+  AutoMigrate: true
 
 # Redis配置（可选）
 # Redis:

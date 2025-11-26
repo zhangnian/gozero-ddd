@@ -3,7 +3,9 @@ package svc
 import (
 	"log"
 
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 
 	"gozero-ddd/internal/application/command"
 	"gozero-ddd/internal/application/query"
@@ -11,6 +13,7 @@ import (
 	"gozero-ddd/internal/domain/service"
 	"gozero-ddd/internal/infrastructure/config"
 	"gozero-ddd/internal/infrastructure/persistence"
+	"gozero-ddd/internal/infrastructure/persistence/model"
 )
 
 // ServiceContext 服务上下文
@@ -18,6 +21,9 @@ import (
 // 这是 go-zero 框架的核心设计模式之一
 type ServiceContext struct {
 	Config config.Config
+
+	// 数据库连接
+	DB *gorm.DB
 
 	// 仓储
 	KnowledgeBaseRepo repository.KnowledgeBaseRepository
@@ -41,6 +47,7 @@ type ServiceContext struct {
 
 // NewServiceContext 创建服务上下文
 func NewServiceContext(c config.Config) *ServiceContext {
+	var db *gorm.DB
 	var kbRepo repository.KnowledgeBaseRepository
 	var docRepo repository.DocumentRepository
 
@@ -51,19 +58,33 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		kbRepo = persistence.NewMemoryKnowledgeBaseRepository()
 		docRepo = persistence.NewMemoryDocumentRepository()
 	} else {
-		// 使用 MySQL 仓储（生产环境）
-		log.Println("📦 使用 MySQL 存储")
+		// 使用 GORM + MySQL（生产环境）
+		log.Println("📦 使用 MySQL 存储 (GORM)")
 		if c.MySQL.DataSource == "" {
 			log.Fatal("❌ MySQL DataSource 未配置")
 		}
 
-		// 创建数据库连接
-		conn := sqlx.NewMysql(c.MySQL.DataSource)
+		// 创建 GORM 数据库连接
+		var err error
+		db, err = gorm.Open(mysql.Open(c.MySQL.DataSource), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Info),
+		})
+		if err != nil {
+			log.Fatalf("❌ 连接数据库失败: %v", err)
+		}
+
+		// 自动迁移表结构（开发环境使用）
+		if c.MySQL.AutoMigrate {
+			log.Println("🔄 自动迁移数据库表结构...")
+			if err := db.AutoMigrate(&model.KnowledgeBaseModel{}, &model.DocumentModel{}); err != nil {
+				log.Fatalf("❌ 数据库迁移失败: %v", err)
+			}
+		}
 
 		// 先创建文档仓储
-		docRepo = persistence.NewMysqlDocumentRepository(conn)
+		docRepo = persistence.NewGormDocumentRepository(db)
 		// 知识库仓储需要文档仓储来加载关联数据
-		kbRepo = persistence.NewMysqlKnowledgeBaseRepository(conn, docRepo)
+		kbRepo = persistence.NewGormKnowledgeBaseRepository(db, docRepo)
 	}
 
 	// 初始化领域服务
@@ -71,6 +92,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 
 	return &ServiceContext{
 		Config: c,
+		DB:     db,
 
 		// 仓储
 		KnowledgeBaseRepo: kbRepo,

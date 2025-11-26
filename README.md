@@ -63,11 +63,11 @@ gozero-ddd/
 **职责**：提供技术实现和外部服务集成
 
 - **Persistence（持久化）**：实现仓储接口
-  - `MysqlKnowledgeBaseRepository` - MySQL 实现
-  - `MysqlDocumentRepository` - MySQL 实现
+  - `GormKnowledgeBaseRepository` - GORM + MySQL 实现
+  - `GormDocumentRepository` - GORM + MySQL 实现
   - `MemoryKnowledgeBaseRepository` - 内存实现（测试用）
   - `MemoryDocumentRepository` - 内存实现（测试用）
-- **Model（数据模型）**：数据库表映射模型
+- **Model（数据模型）**：GORM 数据库表映射模型
 - **Config（配置）**：管理应用配置
 
 ### 4. 接口层 (Interfaces Layer)
@@ -205,7 +205,8 @@ infrastructure/persistence/ <- 具体实现（MySQL/Memory）
 3. **中间件**：实现认证、日志等横切关注点
 4. **错误处理**：统一的错误响应格式
 5. **依赖注入**：通过 ServiceContext 管理依赖
-6. **数据库访问**：使用 go-zero 的 sqlx 封装
+6. **数据库访问**：使用 GORM ORM 框架
+7. **自动迁移**：支持 GORM AutoMigrate 自动建表
 
 ## 📚 参考资料
 

@@ -8,17 +8,17 @@ import (
 )
 
 // KnowledgeBaseModel 知识库数据库模型
-// 用于数据库表映射，与领域实体分离
+// GORM 模型，用于数据库表映射
 type KnowledgeBaseModel struct {
-	ID          string    `db:"id"`
-	Name        string    `db:"name"`
-	Description string    `db:"description"`
-	CreatedAt   time.Time `db:"created_at"`
-	UpdatedAt   time.Time `db:"updated_at"`
+	ID          string    `gorm:"column:id;type:varchar(36);primaryKey"`
+	Name        string    `gorm:"column:name;type:varchar(255);uniqueIndex;not null"`
+	Description string    `gorm:"column:description;type:text"`
+	CreatedAt   time.Time `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt   time.Time `gorm:"column:updated_at;autoUpdateTime"`
 }
 
-// TableName 返回表名
-func (m *KnowledgeBaseModel) TableName() string {
+// TableName 指定表名
+func (KnowledgeBaseModel) TableName() string {
 	return "knowledge_bases"
 }
 
@@ -44,4 +44,3 @@ func KnowledgeBaseModelFromEntity(kb *entity.KnowledgeBase) *KnowledgeBaseModel 
 		UpdatedAt:   kb.UpdatedAt(),
 	}
 }
-

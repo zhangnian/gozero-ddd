@@ -12,7 +12,8 @@ type Config struct {
 
 // MySQLConfig MySQL 数据库配置
 type MySQLConfig struct {
-	DataSource string `json:",optional"` // 数据源 DSN
+	DataSource  string `json:",optional"`        // 数据源 DSN
+	AutoMigrate bool   `json:",default=false"`   // 是否自动迁移表结构
 }
 
 // RedisConfig 缓存配置

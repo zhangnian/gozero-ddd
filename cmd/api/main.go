@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 
-	_ "github.com/go-sql-driver/mysql" // MySQL 驱动
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/rest"
 
