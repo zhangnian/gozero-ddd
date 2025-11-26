@@ -40,3 +40,31 @@ MySQL:
 #   Host: localhost:6379
 #   Password: ""
 #   DB: 0
+
+# ==================== Kafka 领域事件配置 ====================
+# 是否启用 Kafka 事件总线（默认使用内存事件总线）
+UseKafka: false
+
+# Kafka 配置
+Kafka:
+  # Broker 地址列表
+  Brokers:
+    - localhost:9092
+  # 事件主题名称
+  Topic: domain-events
+  # 消费者组ID
+  GroupID: knowledge-service
+  # 写入超时
+  WriteTimeout: 10s
+  # 读取超时
+  ReadTimeout: 10s
+  # 批量发送大小
+  BatchSize: 100
+  # 批量发送超时
+  BatchTimeout: 1s
+  # 确认模式: -1=all, 0=none, 1=leader
+  RequiredAcks: -1
+  # 是否异步发送
+  Async: false
+  # 是否自动创建主题
+  AutoCreateTopic: true
