@@ -5,6 +5,7 @@ import (
 
 	"gozero-ddd/internal/application/dto"
 	"gozero-ddd/internal/domain"
+	"gozero-ddd/internal/domain/event"
 	"gozero-ddd/internal/domain/repository"
 	"gozero-ddd/internal/domain/valueobject"
 )
@@ -18,13 +19,18 @@ type UpdateKnowledgeBaseCommand struct {
 
 // UpdateKnowledgeBaseHandler 更新知识库命令处理器
 type UpdateKnowledgeBaseHandler struct {
-	kbRepo repository.KnowledgeBaseRepository
+	kbRepo         repository.KnowledgeBaseRepository
+	eventPublisher event.EventPublisher
 }
 
 // NewUpdateKnowledgeBaseHandler 创建处理器
-func NewUpdateKnowledgeBaseHandler(kbRepo repository.KnowledgeBaseRepository) *UpdateKnowledgeBaseHandler {
+func NewUpdateKnowledgeBaseHandler(
+	kbRepo repository.KnowledgeBaseRepository,
+	ep event.EventPublisher,
+) *UpdateKnowledgeBaseHandler {
 	return &UpdateKnowledgeBaseHandler{
-		kbRepo: kbRepo,
+		kbRepo:         kbRepo,
+		eventPublisher: ep,
 	}
 }
 
@@ -45,7 +51,7 @@ func (h *UpdateKnowledgeBaseHandler) Handle(ctx context.Context, cmd *UpdateKnow
 		return nil, domain.ErrKnowledgeBaseNotFound
 	}
 
-	// 更新信息
+	// 更新信息（会收集 KnowledgeBaseUpdatedEvent）
 	if err := kb.UpdateInfo(cmd.Name, cmd.Description); err != nil {
 		return nil, err
 	}
@@ -53,6 +59,14 @@ func (h *UpdateKnowledgeBaseHandler) Handle(ctx context.Context, cmd *UpdateKnow
 	// 保存
 	if err := h.kbRepo.Save(ctx, kb); err != nil {
 		return nil, err
+	}
+
+	// 发布领域事件
+	if h.eventPublisher != nil {
+		events := kb.PullEvents()
+		if len(events) > 0 {
+			_ = h.eventPublisher.PublishAll(ctx, events)
+		}
 	}
 
 	return dto.KnowledgeBaseFromEntity(kb, false), nil
