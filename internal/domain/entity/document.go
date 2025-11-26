@@ -1,15 +1,10 @@
 package entity
 
 import (
-	"errors"
 	"time"
 
+	"gozero-ddd/internal/domain"
 	"gozero-ddd/internal/domain/valueobject"
-)
-
-var (
-	ErrDocumentTitleEmpty   = errors.New("document title cannot be empty")
-	ErrDocumentContentEmpty = errors.New("document content cannot be empty")
 )
 
 // Document 文档实体
@@ -28,10 +23,10 @@ type Document struct {
 // NewDocument 创建新文档
 func NewDocument(kbID valueobject.KnowledgeBaseID, title, content string, tags []string) (*Document, error) {
 	if title == "" {
-		return nil, ErrDocumentTitleEmpty
+		return nil, domain.ErrDocumentTitleEmpty
 	}
 	if content == "" {
-		return nil, ErrDocumentContentEmpty
+		return nil, domain.ErrDocumentContentEmpty
 	}
 
 	if tags == nil {
@@ -109,10 +104,10 @@ func (d *Document) UpdatedAt() time.Time {
 // UpdateContent 更新文档内容
 func (d *Document) UpdateContent(title, content string) error {
 	if title == "" {
-		return ErrDocumentTitleEmpty
+		return domain.ErrDocumentTitleEmpty
 	}
 	if content == "" {
-		return ErrDocumentContentEmpty
+		return domain.ErrDocumentContentEmpty
 	}
 	d.title = title
 	d.content = content
@@ -128,4 +123,3 @@ func (d *Document) UpdateTags(tags []string) {
 	d.tags = tags
 	d.updatedAt = time.Now()
 }
-

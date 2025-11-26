@@ -3,7 +3,6 @@ package svc
 import (
 	"log"
 
-	"github.com/zeromicro/go-zero/zrpc"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -12,29 +11,16 @@ import (
 	"gozero-ddd/internal/application/query"
 	"gozero-ddd/internal/domain/repository"
 	"gozero-ddd/internal/domain/service"
+	"gozero-ddd/internal/infrastructure/config"
 	"gozero-ddd/internal/infrastructure/persistence"
 	"gozero-ddd/internal/infrastructure/persistence/model"
 )
-
-// RpcConfig gRPC 服务配置
-// 组合了 go-zero 的 RpcServerConf 和自定义配置
-type RpcConfig struct {
-	zrpc.RpcServerConf               // go-zero gRPC 服务配置
-	MySQL              MySQLConfig   `json:",optional"` // MySQL 配置
-	UseMemory          bool          `json:",default=false"` // 是否使用内存存储
-}
-
-// MySQLConfig MySQL 数据库配置
-type MySQLConfig struct {
-	DataSource  string `json:",optional"`      // 数据源 DSN
-	AutoMigrate bool   `json:",default=false"` // 是否自动迁移表结构
-}
 
 // ServiceContext gRPC 服务上下文
 // go-zero 的依赖注入容器，管理所有服务依赖
 // 与 REST API 的 ServiceContext 类似，但专门用于 gRPC 服务
 type ServiceContext struct {
-	Config RpcConfig
+	Config config.RpcConfig
 
 	// 数据库连接
 	DB *gorm.DB
@@ -58,7 +44,7 @@ type ServiceContext struct {
 
 // NewServiceContext 创建 gRPC 服务上下文
 // 初始化所有依赖，实现依赖注入
-func NewServiceContext(c RpcConfig) *ServiceContext {
+func NewServiceContext(c config.RpcConfig) *ServiceContext {
 	var db *gorm.DB
 	var uow repository.UnitOfWork
 	var kbRepo repository.KnowledgeBaseRepository
@@ -125,4 +111,3 @@ func NewServiceContext(c RpcConfig) *ServiceContext {
 		GetKnowledgeBaseHandler: query.NewGetKnowledgeBaseHandler(kbRepo, docRepo),
 	}
 }
-

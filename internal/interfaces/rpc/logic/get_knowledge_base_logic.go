@@ -4,11 +4,10 @@ import (
 	"context"
 
 	"github.com/zeromicro/go-zero/core/logx"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"gozero-ddd/internal/application/dto"
 	"gozero-ddd/internal/application/query"
+	"gozero-ddd/internal/interfaces"
 	"gozero-ddd/internal/interfaces/rpc/pb"
 	"gozero-ddd/internal/interfaces/rpc/svc"
 )
@@ -37,29 +36,25 @@ func NewGetKnowledgeBaseLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 func (l *GetKnowledgeBaseLogic) GetKnowledgeBase(req *pb.GetKnowledgeBaseRequest) (*pb.GetKnowledgeBaseResponse, error) {
 	l.Logger.Infof("📥 [gRPC] GetKnowledgeBase 请求: id=%s, includeDocuments=%v", req.Id, req.IncludeDocuments)
 
-	// 1. 参数验证 - 在接口层进行基本验证
-	if req.Id == "" {
-		l.Logger.Error("❌ 知识库 ID 不能为空")
-		return nil, status.Error(codes.InvalidArgument, "知识库 ID 不能为空")
-	}
-
-	// 2. 构建查询对象（CQRS 模式中的 Query）
+	// 构建查询对象（CQRS 模式中的 Query）
 	qry := &query.GetKnowledgeBaseQuery{
 		ID:               req.Id,
 		IncludeDocuments: req.IncludeDocuments,
 	}
 
-	// 3. 调用应用层的 Query Handler
+	// 调用应用层的 Query Handler
 	// Query Handler 负责：
+	// - 验证参数格式
 	// - 通过仓储获取领域实体
 	// - 将领域实体转换为 DTO
 	result, err := l.svcCtx.GetKnowledgeBaseHandler.Handle(l.ctx, qry)
 	if err != nil {
 		l.Logger.Errorf("❌ 获取知识库失败: %v", err)
-		return nil, status.Error(codes.NotFound, err.Error())
+		// 使用统一的错误转换函数
+		return nil, interfaces.ToGrpcError(err)
 	}
 
-	// 4. 将 DTO 转换为 gRPC 响应
+	// 将 DTO 转换为 gRPC 响应
 	// 注意：这里进行了 DTO -> Protobuf 的转换
 	// 这种转换保持了各层之间的解耦
 	resp := &pb.GetKnowledgeBaseResponse{
@@ -100,4 +95,3 @@ func convertToProtoKnowledgeBase(d *dto.KnowledgeBaseDTO) *pb.KnowledgeBase {
 
 	return kb
 }
-

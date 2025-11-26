@@ -36,12 +36,12 @@ type ServiceContext struct {
 	KnowledgeService *service.KnowledgeService
 
 	// 命令处理器
-	CreateKnowledgeBaseHandler  *command.CreateKnowledgeBaseHandler
-	UpdateKnowledgeBaseHandler  *command.UpdateKnowledgeBaseHandler
-	DeleteKnowledgeBaseHandler  *command.DeleteKnowledgeBaseHandler
-	AddDocumentHandler          *command.AddDocumentHandler
-	RemoveDocumentHandler       *command.RemoveDocumentHandler
-	MergeKnowledgeBasesHandler  *command.MergeKnowledgeBasesHandler // 新增：合并知识库（事务演示）
+	CreateKnowledgeBaseHandler *command.CreateKnowledgeBaseHandler
+	UpdateKnowledgeBaseHandler *command.UpdateKnowledgeBaseHandler
+	DeleteKnowledgeBaseHandler *command.DeleteKnowledgeBaseHandler
+	AddDocumentHandler         *command.AddDocumentHandler
+	RemoveDocumentHandler      *command.RemoveDocumentHandler
+	MergeKnowledgeBasesHandler *command.MergeKnowledgeBasesHandler
 
 	// 查询处理器
 	GetKnowledgeBaseHandler   *query.GetKnowledgeBaseHandler
@@ -113,12 +113,12 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		KnowledgeService: knowledgeService,
 
 		// 命令处理器
-		CreateKnowledgeBaseHandler:  command.NewCreateKnowledgeBaseHandler(knowledgeService),
-		UpdateKnowledgeBaseHandler:  command.NewUpdateKnowledgeBaseHandler(kbRepo),
-		DeleteKnowledgeBaseHandler:  command.NewDeleteKnowledgeBaseHandler(kbRepo, knowledgeService),
-		AddDocumentHandler:          command.NewAddDocumentHandler(kbRepo, docRepo),
-		RemoveDocumentHandler:       command.NewRemoveDocumentHandler(kbRepo, docRepo),
-		MergeKnowledgeBasesHandler:  command.NewMergeKnowledgeBasesHandler(uow, kbRepo, docRepo),
+		CreateKnowledgeBaseHandler: command.NewCreateKnowledgeBaseHandler(knowledgeService),
+		UpdateKnowledgeBaseHandler: command.NewUpdateKnowledgeBaseHandler(kbRepo),
+		DeleteKnowledgeBaseHandler: command.NewDeleteKnowledgeBaseHandler(kbRepo, knowledgeService),
+		AddDocumentHandler:         command.NewAddDocumentHandler(uow, kbRepo, docRepo),
+		RemoveDocumentHandler:      command.NewRemoveDocumentHandler(uow, kbRepo, docRepo),
+		MergeKnowledgeBasesHandler: command.NewMergeKnowledgeBasesHandler(uow, kbRepo, docRepo),
 
 		// 查询处理器
 		GetKnowledgeBaseHandler:   query.NewGetKnowledgeBaseHandler(kbRepo, docRepo),

@@ -6,6 +6,7 @@ import (
 	"github.com/zeromicro/go-zero/rest/httpx"
 
 	"gozero-ddd/internal/application/command"
+	"gozero-ddd/internal/interfaces"
 	"gozero-ddd/internal/interfaces/api/svc"
 	"gozero-ddd/internal/interfaces/api/types"
 )
@@ -27,7 +28,7 @@ func NewMergeHandler(svcCtx *svc.ServiceContext) *MergeHandler {
 func (h *MergeHandler) MergeKnowledgeBases(w http.ResponseWriter, r *http.Request) {
 	var req types.MergeKnowledgeBasesRequest
 	if err := httpx.Parse(r, &req); err != nil {
-		httpx.WriteJson(w, http.StatusBadRequest, types.NewErrorResponse(400, err.Error()))
+		httpx.WriteJson(w, http.StatusBadRequest, types.NewErrorResponse(http.StatusBadRequest, err.Error()))
 		return
 	}
 
@@ -38,18 +39,11 @@ func (h *MergeHandler) MergeKnowledgeBases(w http.ResponseWriter, r *http.Reques
 
 	result, err := h.svcCtx.MergeKnowledgeBasesHandler.Handle(r.Context(), cmd)
 	if err != nil {
-		// 根据错误类型返回不同的状态码
-		switch err {
-		case command.ErrSourceKnowledgeBaseNotFound, command.ErrTargetKnowledgeBaseNotFound:
-			httpx.WriteJson(w, http.StatusNotFound, types.NewErrorResponse(404, err.Error()))
-		case command.ErrCannotMergeSameKnowledgeBase:
-			httpx.WriteJson(w, http.StatusBadRequest, types.NewErrorResponse(400, err.Error()))
-		default:
-			httpx.WriteJson(w, http.StatusInternalServerError, types.NewErrorResponse(500, err.Error()))
-		}
+		// 使用统一的错误转换函数
+		code := interfaces.HTTPErrorCode(err)
+		httpx.WriteJson(w, code, types.NewErrorResponse(code, err.Error()))
 		return
 	}
 
 	httpx.WriteJson(w, http.StatusOK, types.NewSuccessResponse(result))
 }
-

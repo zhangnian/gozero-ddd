@@ -2,17 +2,11 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"gozero-ddd/internal/application/dto"
+	"gozero-ddd/internal/domain"
 	"gozero-ddd/internal/domain/repository"
 	"gozero-ddd/internal/domain/valueobject"
-)
-
-var (
-	ErrSourceKnowledgeBaseNotFound = errors.New("source knowledge base not found")
-	ErrTargetKnowledgeBaseNotFound = errors.New("target knowledge base not found")
-	ErrCannotMergeSameKnowledgeBase = errors.New("cannot merge knowledge base with itself")
 )
 
 // MergeKnowledgeBasesCommand 合并知识库命令
@@ -47,19 +41,27 @@ func NewMergeKnowledgeBasesHandler(
 // Handle 处理合并知识库命令
 // 使用事务确保操作的原子性：要么全部成功，要么全部失败
 func (h *MergeKnowledgeBasesHandler) Handle(ctx context.Context, cmd *MergeKnowledgeBasesCommand) (*dto.MergeResultDTO, error) {
-	sourceID := valueobject.KnowledgeBaseIDFromString(cmd.SourceID)
-	targetID := valueobject.KnowledgeBaseIDFromString(cmd.TargetID)
+	// 验证 ID 格式
+	sourceID, err := valueobject.KnowledgeBaseIDFromString(cmd.SourceID)
+	if err != nil {
+		return nil, err
+	}
+
+	targetID, err := valueobject.KnowledgeBaseIDFromString(cmd.TargetID)
+	if err != nil {
+		return nil, err
+	}
 
 	// 检查是否合并自己
 	if cmd.SourceID == cmd.TargetID {
-		return nil, ErrCannotMergeSameKnowledgeBase
+		return nil, domain.ErrCannotMergeSameKnowledgeBase
 	}
 
 	var result *dto.MergeResultDTO
 
 	// 使用工作单元执行事务
 	// Transaction 方法会自动处理提交和回滚
-	err := h.unitOfWork.Transaction(ctx, func(txCtx context.Context) error {
+	err = h.unitOfWork.Transaction(ctx, func(txCtx context.Context) error {
 		// ========== 以下所有操作都在同一个事务中 ==========
 
 		// 1. 查找源知识库
@@ -68,7 +70,7 @@ func (h *MergeKnowledgeBasesHandler) Handle(ctx context.Context, cmd *MergeKnowl
 			return err
 		}
 		if sourceKB == nil {
-			return ErrSourceKnowledgeBaseNotFound
+			return domain.ErrKnowledgeBaseNotFound
 		}
 
 		// 2. 查找目标知识库
@@ -77,7 +79,7 @@ func (h *MergeKnowledgeBasesHandler) Handle(ctx context.Context, cmd *MergeKnowl
 			return err
 		}
 		if targetKB == nil {
-			return ErrTargetKnowledgeBaseNotFound
+			return domain.ErrKnowledgeBaseNotFound
 		}
 
 		// 3. 获取源知识库的所有文档
@@ -120,12 +122,12 @@ func (h *MergeKnowledgeBasesHandler) Handle(ctx context.Context, cmd *MergeKnowl
 
 		// 构建结果
 		result = &dto.MergeResultDTO{
-			SourceID:        cmd.SourceID,
-			SourceName:      sourceKB.Name(),
-			TargetID:        cmd.TargetID,
-			TargetName:      targetKB.Name(),
-			DocumentsMoved:  movedCount,
-			SourceDeleted:   true,
+			SourceID:       cmd.SourceID,
+			SourceName:     sourceKB.Name(),
+			TargetID:       cmd.TargetID,
+			TargetName:     targetKB.Name(),
+			DocumentsMoved: movedCount,
+			SourceDeleted:  true,
 		}
 
 		return nil
@@ -137,4 +139,3 @@ func (h *MergeKnowledgeBasesHandler) Handle(ctx context.Context, cmd *MergeKnowl
 
 	return result, nil
 }
-

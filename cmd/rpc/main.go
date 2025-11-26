@@ -3,12 +3,16 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/zrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
+	"gozero-ddd/internal/infrastructure/config"
 	"gozero-ddd/internal/interfaces/rpc/pb"
 	"gozero-ddd/internal/interfaces/rpc/server"
 	"gozero-ddd/internal/interfaces/rpc/svc"
@@ -20,7 +24,7 @@ func main() {
 	flag.Parse()
 
 	// 1. 加载配置
-	var c svc.RpcConfig
+	var c config.RpcConfig
 	conf.MustLoad(*configFile, &c)
 
 	// 2. 创建服务上下文（依赖注入容器）
@@ -41,7 +45,6 @@ func main() {
 			reflection.Register(grpcServer)
 		}
 	})
-	defer s.Stop()
 
 	// 打印启动信息
 	fmt.Printf("🚀 知识库管理系统 gRPC 服务启动成功\n")
@@ -56,6 +59,16 @@ func main() {
 	fmt.Printf("   grpcurl -plaintext -d '{\"id\":\"<knowledge_base_id>\"}' localhost:9999 knowledge.KnowledgeService/GetKnowledgeBase\n")
 	fmt.Printf("\n")
 
-	// 6. 启动服务器
+	// 6. 优雅关闭
+	// 监听系统信号，实现优雅停机
+	go func() {
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+		<-sig
+		fmt.Println("\n🛑 收到关闭信号，正在优雅关闭...")
+		s.Stop()
+	}()
+
+	// 7. 启动服务器
 	s.Start()
 }

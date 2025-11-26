@@ -63,13 +63,14 @@ func (DocumentModel) TableName() string {
 }
 
 // ToEntity 将数据库模型转换为领域实体
+// 使用 MustXxxIDFromString 因为数据来自数据库，是可信的
 func (m *DocumentModel) ToEntity() *entity.Document {
 	tags := make([]string, len(m.Tags))
 	copy(tags, m.Tags)
 
 	return entity.ReconstructDocument(
-		valueobject.DocumentIDFromString(m.ID),
-		valueobject.KnowledgeBaseIDFromString(m.KnowledgeBaseID),
+		valueobject.MustDocumentIDFromString(m.ID),
+		valueobject.MustKnowledgeBaseIDFromString(m.KnowledgeBaseID),
 		m.Title,
 		m.Content,
 		tags,

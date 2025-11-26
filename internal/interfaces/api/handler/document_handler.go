@@ -7,6 +7,7 @@ import (
 
 	"gozero-ddd/internal/application/command"
 	"gozero-ddd/internal/application/query"
+	"gozero-ddd/internal/interfaces"
 	"gozero-ddd/internal/interfaces/api/svc"
 	"gozero-ddd/internal/interfaces/api/types"
 )
@@ -25,7 +26,7 @@ func NewDocumentHandler(svcCtx *svc.ServiceContext) *DocumentHandler {
 func (h *DocumentHandler) Add(w http.ResponseWriter, r *http.Request) {
 	var req types.AddDocumentRequest
 	if err := httpx.Parse(r, &req); err != nil {
-		httpx.WriteJson(w, http.StatusBadRequest, types.NewErrorResponse(400, err.Error()))
+		httpx.WriteJson(w, http.StatusBadRequest, types.NewErrorResponse(http.StatusBadRequest, err.Error()))
 		return
 	}
 
@@ -38,7 +39,8 @@ func (h *DocumentHandler) Add(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svcCtx.AddDocumentHandler.Handle(r.Context(), cmd)
 	if err != nil {
-		httpx.WriteJson(w, http.StatusInternalServerError, types.NewErrorResponse(500, err.Error()))
+		code := interfaces.HTTPErrorCode(err)
+		httpx.WriteJson(w, code, types.NewErrorResponse(code, err.Error()))
 		return
 	}
 
@@ -49,7 +51,7 @@ func (h *DocumentHandler) Add(w http.ResponseWriter, r *http.Request) {
 func (h *DocumentHandler) List(w http.ResponseWriter, r *http.Request) {
 	var req types.ListDocumentsRequest
 	if err := httpx.Parse(r, &req); err != nil {
-		httpx.WriteJson(w, http.StatusBadRequest, types.NewErrorResponse(400, err.Error()))
+		httpx.WriteJson(w, http.StatusBadRequest, types.NewErrorResponse(http.StatusBadRequest, err.Error()))
 		return
 	}
 
@@ -59,7 +61,8 @@ func (h *DocumentHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svcCtx.ListDocumentsHandler.Handle(r.Context(), qry)
 	if err != nil {
-		httpx.WriteJson(w, http.StatusInternalServerError, types.NewErrorResponse(500, err.Error()))
+		code := interfaces.HTTPErrorCode(err)
+		httpx.WriteJson(w, code, types.NewErrorResponse(code, err.Error()))
 		return
 	}
 
@@ -70,7 +73,7 @@ func (h *DocumentHandler) List(w http.ResponseWriter, r *http.Request) {
 func (h *DocumentHandler) Remove(w http.ResponseWriter, r *http.Request) {
 	var req types.RemoveDocumentRequest
 	if err := httpx.Parse(r, &req); err != nil {
-		httpx.WriteJson(w, http.StatusBadRequest, types.NewErrorResponse(400, err.Error()))
+		httpx.WriteJson(w, http.StatusBadRequest, types.NewErrorResponse(http.StatusBadRequest, err.Error()))
 		return
 	}
 
@@ -80,10 +83,10 @@ func (h *DocumentHandler) Remove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svcCtx.RemoveDocumentHandler.Handle(r.Context(), cmd); err != nil {
-		httpx.WriteJson(w, http.StatusInternalServerError, types.NewErrorResponse(500, err.Error()))
+		code := interfaces.HTTPErrorCode(err)
+		httpx.WriteJson(w, code, types.NewErrorResponse(code, err.Error()))
 		return
 	}
 
 	httpx.WriteJson(w, http.StatusOK, types.NewSuccessResponse(nil))
 }
-

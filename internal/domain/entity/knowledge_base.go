@@ -1,15 +1,10 @@
 package entity
 
 import (
-	"errors"
 	"time"
 
+	"gozero-ddd/internal/domain"
 	"gozero-ddd/internal/domain/valueobject"
-)
-
-var (
-	ErrKnowledgeBaseNameEmpty = errors.New("knowledge base name cannot be empty")
-	ErrDocumentNotFound       = errors.New("document not found in knowledge base")
 )
 
 // KnowledgeBase 知识库实体（聚合根）
@@ -27,7 +22,7 @@ type KnowledgeBase struct {
 // NewKnowledgeBase 创建新的知识库
 func NewKnowledgeBase(name, description string) (*KnowledgeBase, error) {
 	if name == "" {
-		return nil, ErrKnowledgeBaseNameEmpty
+		return nil, domain.ErrKnowledgeBaseNameEmpty
 	}
 
 	now := time.Now()
@@ -94,7 +89,7 @@ func (kb *KnowledgeBase) UpdatedAt() time.Time {
 // UpdateInfo 更新知识库信息
 func (kb *KnowledgeBase) UpdateInfo(name, description string) error {
 	if name == "" {
-		return ErrKnowledgeBaseNameEmpty
+		return domain.ErrKnowledgeBaseNameEmpty
 	}
 	kb.name = name
 	kb.description = description
@@ -123,7 +118,7 @@ func (kb *KnowledgeBase) RemoveDocument(docID valueobject.DocumentID) error {
 			return nil
 		}
 	}
-	return ErrDocumentNotFound
+	return domain.ErrDocumentNotFound
 }
 
 // GetDocument 获取指定文档
@@ -133,7 +128,7 @@ func (kb *KnowledgeBase) GetDocument(docID valueobject.DocumentID) (*Document, e
 			return doc, nil
 		}
 	}
-	return nil, ErrDocumentNotFound
+	return nil, domain.ErrDocumentNotFound
 }
 
 // DocumentCount 获取文档数量

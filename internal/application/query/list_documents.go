@@ -27,7 +27,13 @@ func NewListDocumentsHandler(docRepo repository.DocumentRepository) *ListDocumen
 
 // Handle 处理列出文档查询
 func (h *ListDocumentsHandler) Handle(ctx context.Context, query *ListDocumentsQuery) (*dto.DocumentListDTO, error) {
-	docs, err := h.docRepo.FindByKnowledgeBaseID(ctx, valueobject.KnowledgeBaseIDFromString(query.KnowledgeBaseID))
+	// 验证 ID 格式
+	kbID, err := valueobject.KnowledgeBaseIDFromString(query.KnowledgeBaseID)
+	if err != nil {
+		return nil, err
+	}
+
+	docs, err := h.docRepo.FindByKnowledgeBaseID(ctx, kbID)
 	if err != nil {
 		return nil, err
 	}
@@ -42,4 +48,3 @@ func (h *ListDocumentsHandler) Handle(ctx context.Context, query *ListDocumentsQ
 		Total: len(items),
 	}, nil
 }
-

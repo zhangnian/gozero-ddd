@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 
+	"gozero-ddd/internal/domain"
 	"gozero-ddd/internal/domain/repository"
 	"gozero-ddd/internal/domain/service"
 	"gozero-ddd/internal/domain/valueobject"
@@ -32,16 +33,21 @@ func NewDeleteKnowledgeBaseHandler(
 
 // Handle 处理删除知识库命令
 func (h *DeleteKnowledgeBaseHandler) Handle(ctx context.Context, cmd *DeleteKnowledgeBaseCommand) error {
+	// 验证 ID 格式
+	kbID, err := valueobject.KnowledgeBaseIDFromString(cmd.ID)
+	if err != nil {
+		return err
+	}
+
 	// 查找知识库
-	kb, err := h.kbRepo.FindByID(ctx, valueobject.KnowledgeBaseIDFromString(cmd.ID))
+	kb, err := h.kbRepo.FindByID(ctx, kbID)
 	if err != nil {
 		return err
 	}
 	if kb == nil {
-		return ErrKnowledgeBaseNotFound
+		return domain.ErrKnowledgeBaseNotFound
 	}
 
 	// 使用领域服务删除（包含删除关联文档的逻辑）
 	return h.knowledgeService.DeleteKnowledgeBase(ctx, kb)
 }
-

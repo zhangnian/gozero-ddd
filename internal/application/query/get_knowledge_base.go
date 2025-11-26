@@ -2,15 +2,11 @@ package query
 
 import (
 	"context"
-	"errors"
 
 	"gozero-ddd/internal/application/dto"
+	"gozero-ddd/internal/domain"
 	"gozero-ddd/internal/domain/repository"
 	"gozero-ddd/internal/domain/valueobject"
-)
-
-var (
-	ErrKnowledgeBaseNotFound = errors.New("knowledge base not found")
 )
 
 // GetKnowledgeBaseQuery 获取知识库查询
@@ -38,14 +34,19 @@ func NewGetKnowledgeBaseHandler(
 
 // Handle 处理获取知识库查询
 func (h *GetKnowledgeBaseHandler) Handle(ctx context.Context, query *GetKnowledgeBaseQuery) (*dto.KnowledgeBaseDTO, error) {
-	kb, err := h.kbRepo.FindByID(ctx, valueobject.KnowledgeBaseIDFromString(query.ID))
+	// 验证 ID 格式
+	kbID, err := valueobject.KnowledgeBaseIDFromString(query.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	kb, err := h.kbRepo.FindByID(ctx, kbID)
 	if err != nil {
 		return nil, err
 	}
 	if kb == nil {
-		return nil, ErrKnowledgeBaseNotFound
+		return nil, domain.ErrKnowledgeBaseNotFound
 	}
 
 	return dto.KnowledgeBaseFromEntity(kb, query.IncludeDocuments), nil
 }
-

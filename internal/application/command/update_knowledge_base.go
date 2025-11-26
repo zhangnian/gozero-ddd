@@ -2,15 +2,11 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"gozero-ddd/internal/application/dto"
+	"gozero-ddd/internal/domain"
 	"gozero-ddd/internal/domain/repository"
 	"gozero-ddd/internal/domain/valueobject"
-)
-
-var (
-	ErrKnowledgeBaseNotFound = errors.New("knowledge base not found")
 )
 
 // UpdateKnowledgeBaseCommand 更新知识库命令
@@ -34,13 +30,19 @@ func NewUpdateKnowledgeBaseHandler(kbRepo repository.KnowledgeBaseRepository) *U
 
 // Handle 处理更新知识库命令
 func (h *UpdateKnowledgeBaseHandler) Handle(ctx context.Context, cmd *UpdateKnowledgeBaseCommand) (*dto.KnowledgeBaseDTO, error) {
+	// 验证 ID 格式
+	kbID, err := valueobject.KnowledgeBaseIDFromString(cmd.ID)
+	if err != nil {
+		return nil, err
+	}
+
 	// 查找知识库
-	kb, err := h.kbRepo.FindByID(ctx, valueobject.KnowledgeBaseIDFromString(cmd.ID))
+	kb, err := h.kbRepo.FindByID(ctx, kbID)
 	if err != nil {
 		return nil, err
 	}
 	if kb == nil {
-		return nil, ErrKnowledgeBaseNotFound
+		return nil, domain.ErrKnowledgeBaseNotFound
 	}
 
 	// 更新信息
@@ -55,4 +57,3 @@ func (h *UpdateKnowledgeBaseHandler) Handle(ctx context.Context, cmd *UpdateKnow
 
 	return dto.KnowledgeBaseFromEntity(kb, false), nil
 }
-

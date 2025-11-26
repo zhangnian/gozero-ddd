@@ -7,6 +7,7 @@ import (
 
 	"gozero-ddd/internal/application/command"
 	"gozero-ddd/internal/application/query"
+	"gozero-ddd/internal/interfaces"
 	"gozero-ddd/internal/interfaces/api/svc"
 	"gozero-ddd/internal/interfaces/api/types"
 )
@@ -25,7 +26,7 @@ func NewKnowledgeBaseHandler(svcCtx *svc.ServiceContext) *KnowledgeBaseHandler {
 func (h *KnowledgeBaseHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req types.CreateKnowledgeBaseRequest
 	if err := httpx.Parse(r, &req); err != nil {
-		httpx.WriteJson(w, http.StatusBadRequest, types.NewErrorResponse(400, err.Error()))
+		httpx.WriteJson(w, http.StatusBadRequest, types.NewErrorResponse(http.StatusBadRequest, err.Error()))
 		return
 	}
 
@@ -36,7 +37,8 @@ func (h *KnowledgeBaseHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svcCtx.CreateKnowledgeBaseHandler.Handle(r.Context(), cmd)
 	if err != nil {
-		httpx.WriteJson(w, http.StatusInternalServerError, types.NewErrorResponse(500, err.Error()))
+		code := interfaces.HTTPErrorCode(err)
+		httpx.WriteJson(w, code, types.NewErrorResponse(code, err.Error()))
 		return
 	}
 
@@ -47,7 +49,7 @@ func (h *KnowledgeBaseHandler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *KnowledgeBaseHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var req types.UpdateKnowledgeBaseRequest
 	if err := httpx.Parse(r, &req); err != nil {
-		httpx.WriteJson(w, http.StatusBadRequest, types.NewErrorResponse(400, err.Error()))
+		httpx.WriteJson(w, http.StatusBadRequest, types.NewErrorResponse(http.StatusBadRequest, err.Error()))
 		return
 	}
 
@@ -59,7 +61,8 @@ func (h *KnowledgeBaseHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svcCtx.UpdateKnowledgeBaseHandler.Handle(r.Context(), cmd)
 	if err != nil {
-		httpx.WriteJson(w, http.StatusInternalServerError, types.NewErrorResponse(500, err.Error()))
+		code := interfaces.HTTPErrorCode(err)
+		httpx.WriteJson(w, code, types.NewErrorResponse(code, err.Error()))
 		return
 	}
 
@@ -70,7 +73,7 @@ func (h *KnowledgeBaseHandler) Update(w http.ResponseWriter, r *http.Request) {
 func (h *KnowledgeBaseHandler) Get(w http.ResponseWriter, r *http.Request) {
 	var req types.GetKnowledgeBaseRequest
 	if err := httpx.Parse(r, &req); err != nil {
-		httpx.WriteJson(w, http.StatusBadRequest, types.NewErrorResponse(400, err.Error()))
+		httpx.WriteJson(w, http.StatusBadRequest, types.NewErrorResponse(http.StatusBadRequest, err.Error()))
 		return
 	}
 
@@ -81,7 +84,8 @@ func (h *KnowledgeBaseHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svcCtx.GetKnowledgeBaseHandler.Handle(r.Context(), qry)
 	if err != nil {
-		httpx.WriteJson(w, http.StatusNotFound, types.NewErrorResponse(404, err.Error()))
+		code := interfaces.HTTPErrorCode(err)
+		httpx.WriteJson(w, code, types.NewErrorResponse(code, err.Error()))
 		return
 	}
 
@@ -94,7 +98,8 @@ func (h *KnowledgeBaseHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svcCtx.ListKnowledgeBasesHandler.Handle(r.Context(), qry)
 	if err != nil {
-		httpx.WriteJson(w, http.StatusInternalServerError, types.NewErrorResponse(500, err.Error()))
+		code := interfaces.HTTPErrorCode(err)
+		httpx.WriteJson(w, code, types.NewErrorResponse(code, err.Error()))
 		return
 	}
 
@@ -105,7 +110,7 @@ func (h *KnowledgeBaseHandler) List(w http.ResponseWriter, r *http.Request) {
 func (h *KnowledgeBaseHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	var req types.DeleteKnowledgeBaseRequest
 	if err := httpx.Parse(r, &req); err != nil {
-		httpx.WriteJson(w, http.StatusBadRequest, types.NewErrorResponse(400, err.Error()))
+		httpx.WriteJson(w, http.StatusBadRequest, types.NewErrorResponse(http.StatusBadRequest, err.Error()))
 		return
 	}
 
@@ -114,10 +119,10 @@ func (h *KnowledgeBaseHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svcCtx.DeleteKnowledgeBaseHandler.Handle(r.Context(), cmd); err != nil {
-		httpx.WriteJson(w, http.StatusInternalServerError, types.NewErrorResponse(500, err.Error()))
+		code := interfaces.HTTPErrorCode(err)
+		httpx.WriteJson(w, code, types.NewErrorResponse(code, err.Error()))
 		return
 	}
 
 	httpx.WriteJson(w, http.StatusOK, types.NewSuccessResponse(nil))
 }
-

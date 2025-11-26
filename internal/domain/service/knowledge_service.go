@@ -2,14 +2,10 @@ package service
 
 import (
 	"context"
-	"errors"
 
+	"gozero-ddd/internal/domain"
 	"gozero-ddd/internal/domain/entity"
 	"gozero-ddd/internal/domain/repository"
-)
-
-var (
-	ErrKnowledgeBaseNameExists = errors.New("knowledge base name already exists")
 )
 
 // KnowledgeService 知识库领域服务
@@ -39,7 +35,7 @@ func (s *KnowledgeService) CreateKnowledgeBase(ctx context.Context, name, descri
 		return nil, err
 	}
 	if exists {
-		return nil, ErrKnowledgeBaseNameExists
+		return nil, domain.ErrKnowledgeBaseNameExists
 	}
 
 	// 创建知识库实体
@@ -67,4 +63,3 @@ func (s *KnowledgeService) DeleteKnowledgeBase(ctx context.Context, kb *entity.K
 	// 再删除知识库
 	return s.kbRepo.Delete(ctx, kb.ID())
 }
-

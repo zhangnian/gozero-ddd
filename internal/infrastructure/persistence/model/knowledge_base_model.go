@@ -23,9 +23,10 @@ func (KnowledgeBaseModel) TableName() string {
 }
 
 // ToEntity 将数据库模型转换为领域实体
+// 使用 MustKnowledgeBaseIDFromString 因为数据来自数据库，是可信的
 func (m *KnowledgeBaseModel) ToEntity(documents []*entity.Document) *entity.KnowledgeBase {
 	return entity.ReconstructKnowledgeBase(
-		valueobject.KnowledgeBaseIDFromString(m.ID),
+		valueobject.MustKnowledgeBaseIDFromString(m.ID),
 		m.Name,
 		m.Description,
 		documents,
