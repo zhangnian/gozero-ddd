@@ -3,6 +3,7 @@ package svc
 import (
 	"log"
 
+	"github.com/zeromicro/go-zero/zrpc"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -11,16 +12,29 @@ import (
 	"gozero-ddd/internal/application/query"
 	"gozero-ddd/internal/domain/repository"
 	"gozero-ddd/internal/domain/service"
-	"gozero-ddd/internal/infrastructure/config"
 	"gozero-ddd/internal/infrastructure/persistence"
 	"gozero-ddd/internal/infrastructure/persistence/model"
 )
 
-// ServiceContext 服务上下文
-// go-zero 使用 ServiceContext 来管理依赖注入
-// 这是 go-zero 框架的核心设计模式之一
+// RpcConfig gRPC 服务配置
+// 组合了 go-zero 的 RpcServerConf 和自定义配置
+type RpcConfig struct {
+	zrpc.RpcServerConf               // go-zero gRPC 服务配置
+	MySQL              MySQLConfig   `json:",optional"` // MySQL 配置
+	UseMemory          bool          `json:",default=false"` // 是否使用内存存储
+}
+
+// MySQLConfig MySQL 数据库配置
+type MySQLConfig struct {
+	DataSource  string `json:",optional"`      // 数据源 DSN
+	AutoMigrate bool   `json:",default=false"` // 是否自动迁移表结构
+}
+
+// ServiceContext gRPC 服务上下文
+// go-zero 的依赖注入容器，管理所有服务依赖
+// 与 REST API 的 ServiceContext 类似，但专门用于 gRPC 服务
 type ServiceContext struct {
-	Config config.Config
+	Config RpcConfig
 
 	// 数据库连接
 	DB *gorm.DB
@@ -28,45 +42,38 @@ type ServiceContext struct {
 	// 工作单元（事务管理）
 	UnitOfWork repository.UnitOfWork
 
-	// 仓储
+	// 仓储层 - 负责数据持久化
 	KnowledgeBaseRepo repository.KnowledgeBaseRepository
 	DocumentRepo      repository.DocumentRepository
 
-	// 领域服务
+	// 领域服务 - 处理跨实体的业务逻辑
 	KnowledgeService *service.KnowledgeService
 
-	// 命令处理器
-	CreateKnowledgeBaseHandler  *command.CreateKnowledgeBaseHandler
-	UpdateKnowledgeBaseHandler  *command.UpdateKnowledgeBaseHandler
-	DeleteKnowledgeBaseHandler  *command.DeleteKnowledgeBaseHandler
-	AddDocumentHandler          *command.AddDocumentHandler
-	RemoveDocumentHandler       *command.RemoveDocumentHandler
-	MergeKnowledgeBasesHandler  *command.MergeKnowledgeBasesHandler // 新增：合并知识库（事务演示）
+	// 命令处理器 - 处理写操作（CQRS 模式中的 Command）
+	CreateKnowledgeBaseHandler *command.CreateKnowledgeBaseHandler
 
-	// 查询处理器
-	GetKnowledgeBaseHandler   *query.GetKnowledgeBaseHandler
-	ListKnowledgeBasesHandler *query.ListKnowledgeBasesHandler
-	ListDocumentsHandler      *query.ListDocumentsHandler
+	// 查询处理器 - 处理读操作（CQRS 模式中的 Query）
+	GetKnowledgeBaseHandler *query.GetKnowledgeBaseHandler
 }
 
-// NewServiceContext 创建服务上下文
-func NewServiceContext(c config.Config) *ServiceContext {
+// NewServiceContext 创建 gRPC 服务上下文
+// 初始化所有依赖，实现依赖注入
+func NewServiceContext(c RpcConfig) *ServiceContext {
 	var db *gorm.DB
 	var uow repository.UnitOfWork
 	var kbRepo repository.KnowledgeBaseRepository
 	var docRepo repository.DocumentRepository
 
-	// 根据配置选择仓储实现
+	// 根据配置选择仓储实现（策略模式）
 	if c.UseMemory {
 		// 使用内存仓储（开发测试用）
-		log.Println("📦 使用内存存储")
+		log.Println("📦 [gRPC] 使用内存存储")
 		kbRepo = persistence.NewMemoryKnowledgeBaseRepository()
 		docRepo = persistence.NewMemoryDocumentRepository()
-		// 内存模式下使用空的工作单元
 		uow = persistence.NewMemoryUnitOfWork()
 	} else {
 		// 使用 GORM + MySQL（生产环境）
-		log.Println("📦 使用 MySQL 存储 (GORM)")
+		log.Println("📦 [gRPC] 使用 MySQL 存储 (GORM)")
 		if c.MySQL.DataSource == "" {
 			log.Fatal("❌ MySQL DataSource 未配置")
 		}
@@ -82,7 +89,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 
 		// 自动迁移表结构（开发环境使用）
 		if c.MySQL.AutoMigrate {
-			log.Println("🔄 自动迁移数据库表结构...")
+			log.Println("🔄 [gRPC] 自动迁移数据库表结构...")
 			if err := db.AutoMigrate(&model.KnowledgeBaseModel{}, &model.DocumentModel{}); err != nil {
 				log.Fatalf("❌ 数据库迁移失败: %v", err)
 			}
@@ -91,9 +98,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		// 创建工作单元（事务管理）
 		uow = persistence.NewGormUnitOfWork(db)
 
-		// 先创建文档仓储
+		// 创建仓储实例
 		docRepo = persistence.NewGormDocumentRepository(db)
-		// 知识库仓储需要文档仓储来加载关联数据
 		kbRepo = persistence.NewGormKnowledgeBaseRepository(db, docRepo)
 	}
 
@@ -112,17 +118,11 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		// 领域服务
 		KnowledgeService: knowledgeService,
 
-		// 命令处理器
-		CreateKnowledgeBaseHandler:  command.NewCreateKnowledgeBaseHandler(knowledgeService),
-		UpdateKnowledgeBaseHandler:  command.NewUpdateKnowledgeBaseHandler(kbRepo),
-		DeleteKnowledgeBaseHandler:  command.NewDeleteKnowledgeBaseHandler(kbRepo, knowledgeService),
-		AddDocumentHandler:          command.NewAddDocumentHandler(kbRepo, docRepo),
-		RemoveDocumentHandler:       command.NewRemoveDocumentHandler(kbRepo, docRepo),
-		MergeKnowledgeBasesHandler:  command.NewMergeKnowledgeBasesHandler(uow, kbRepo, docRepo),
+		// 命令处理器 - 用于 CreateKnowledgeBase RPC
+		CreateKnowledgeBaseHandler: command.NewCreateKnowledgeBaseHandler(knowledgeService),
 
-		// 查询处理器
-		GetKnowledgeBaseHandler:   query.NewGetKnowledgeBaseHandler(kbRepo, docRepo),
-		ListKnowledgeBasesHandler: query.NewListKnowledgeBasesHandler(kbRepo),
-		ListDocumentsHandler:      query.NewListDocumentsHandler(docRepo),
+		// 查询处理器 - 用于 GetKnowledgeBase RPC
+		GetKnowledgeBaseHandler: query.NewGetKnowledgeBaseHandler(kbRepo, docRepo),
 	}
 }
+

@@ -1,0 +1,37 @@
+# 知识库管理系统 gRPC 服务配置文件
+# go-zero 使用 YAML 格式的配置文件
+
+# 服务名称
+Name: knowledge-rpc
+
+# gRPC 监听地址
+ListenOn: 0.0.0.0:9999
+
+# 日志配置
+Log:
+  # 日志级别: info, error, severe
+  Level: info
+  # 日志模式: console, file
+  Mode: console
+  # 日志保留天数
+  KeepDays: 7
+
+# 超时配置（毫秒）
+Timeout: 30000
+
+# 是否使用内存存储（开发测试用，生产环境请设为 false）
+UseMemory: false
+
+# MySQL 配置 (GORM)
+MySQL:
+  # 数据源 DSN 格式: user:password@tcp(host:port)/database?charset=utf8mb4&parseTime=True&loc=Local
+  DataSource: "root:123456@tcp(127.0.0.1:3306)/knowledge_db?charset=utf8mb4&parseTime=True&loc=Local"
+  # 是否自动迁移表结构（开发环境可设为 true，生产环境建议设为 false 使用手动迁移）
+  AutoMigrate: true
+
+# Etcd 服务注册配置（可选，用于服务发现）
+# Etcd:
+#   Hosts:
+#     - 127.0.0.1:2379
+#   Key: knowledge.rpc
+

@@ -25,17 +25,22 @@ func NewGormDocumentRepository(db *gorm.DB) *GormDocumentRepository {
 // 确保实现了接口
 var _ repository.DocumentRepository = (*GormDocumentRepository)(nil)
 
+// getDB 获取数据库连接（支持事务）
+func (r *GormDocumentRepository) getDB(ctx context.Context) *gorm.DB {
+	return GetDBFromContext(ctx, r.db)
+}
+
 // Save 保存文档
 func (r *GormDocumentRepository) Save(ctx context.Context, doc *entity.Document) error {
 	m := model.DocumentModelFromEntity(doc)
-	return r.db.WithContext(ctx).Save(m).Error
+	return r.getDB(ctx).WithContext(ctx).Save(m).Error
 }
 
 // FindByID 根据ID查找文档
 func (r *GormDocumentRepository) FindByID(ctx context.Context, id valueobject.DocumentID) (*entity.Document, error) {
 	var m model.DocumentModel
 
-	err := r.db.WithContext(ctx).Where("id = ?", id.String()).First(&m).Error
+	err := r.getDB(ctx).WithContext(ctx).Where("id = ?", id.String()).First(&m).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -50,7 +55,7 @@ func (r *GormDocumentRepository) FindByID(ctx context.Context, id valueobject.Do
 func (r *GormDocumentRepository) FindByKnowledgeBaseID(ctx context.Context, kbID valueobject.KnowledgeBaseID) ([]*entity.Document, error) {
 	var models []model.DocumentModel
 
-	err := r.db.WithContext(ctx).
+	err := r.getDB(ctx).WithContext(ctx).
 		Where("knowledge_base_id = ?", kbID.String()).
 		Order("created_at DESC").
 		Find(&models).Error
@@ -68,12 +73,12 @@ func (r *GormDocumentRepository) FindByKnowledgeBaseID(ctx context.Context, kbID
 
 // Delete 删除文档
 func (r *GormDocumentRepository) Delete(ctx context.Context, id valueobject.DocumentID) error {
-	return r.db.WithContext(ctx).Where("id = ?", id.String()).Delete(&model.DocumentModel{}).Error
+	return r.getDB(ctx).WithContext(ctx).Where("id = ?", id.String()).Delete(&model.DocumentModel{}).Error
 }
 
 // DeleteByKnowledgeBaseID 删除知识库下所有文档
 func (r *GormDocumentRepository) DeleteByKnowledgeBaseID(ctx context.Context, kbID valueobject.KnowledgeBaseID) error {
-	return r.db.WithContext(ctx).Where("knowledge_base_id = ?", kbID.String()).Delete(&model.DocumentModel{}).Error
+	return r.getDB(ctx).WithContext(ctx).Where("knowledge_base_id = ?", kbID.String()).Delete(&model.DocumentModel{}).Error
 }
 
 // SearchByTags 根据标签搜索文档
@@ -82,10 +87,8 @@ func (r *GormDocumentRepository) SearchByTags(ctx context.Context, tags []string
 		return make([]*entity.Document, 0), nil
 	}
 
-	// 构建查询：使用 JSON_CONTAINS 进行标签匹配
-	query := r.db.WithContext(ctx).Model(&model.DocumentModel{})
+	query := r.getDB(ctx).WithContext(ctx).Model(&model.DocumentModel{})
 
-	// 只要包含任一标签即返回
 	for i, tag := range tags {
 		if i == 0 {
 			query = query.Where("JSON_CONTAINS(tags, ?)", `"`+tag+`"`)
@@ -107,4 +110,3 @@ func (r *GormDocumentRepository) SearchByTags(ctx context.Context, tags []string
 
 	return result, nil
 }
-

@@ -40,6 +40,7 @@ func main() {
 	fmt.Printf("   GET    /api/v1/knowledge/:id       - 获取知识库详情\n")
 	fmt.Printf("   PUT    /api/v1/knowledge/:id       - 更新知识库\n")
 	fmt.Printf("   DELETE /api/v1/knowledge/:id       - 删除知识库\n")
+	fmt.Printf("   POST   /api/v1/knowledge/merge     - 合并知识库（事务演示）\n")
 	fmt.Printf("   POST   /api/v1/knowledge/:id/documents      - 添加文档\n")
 	fmt.Printf("   GET    /api/v1/knowledge/:id/documents      - 获取文档列表\n")
 	fmt.Printf("   DELETE /api/v1/knowledge/:id/documents/:doc_id - 删除文档\n")

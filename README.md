@@ -7,8 +7,10 @@
 ```
 gozero-ddd/
 ├── cmd/                          # 应用入口
-│   └── api/
-│       └── main.go
+│   ├── api/
+│   │   └── main.go              # REST API 入口
+│   └── rpc/
+│       └── main.go              # gRPC 服务入口
 ├── internal/                     # 内部代码（DDD分层架构）
 │   ├── domain/                   # 🔷 领域层 - DDD核心
 │   │   ├── entity/              # 实体（具有唯一标识的对象）
@@ -25,15 +27,25 @@ gozero-ddd/
 │   │   │   └── model/          # 数据库模型
 │   │   └── config/              # 配置管理
 │   └── interfaces/              # 🟢 接口层 - 对外暴露
-│       └── api/                 # HTTP API
-│           ├── handler/         # 请求处理器
-│           ├── middleware/      # 中间件
-│           ├── svc/             # 服务上下文（依赖注入）
-│           └── types/           # 请求/响应类型
+│       ├── api/                 # HTTP REST API
+│       │   ├── handler/         # 请求处理器
+│       │   ├── middleware/      # 中间件
+│       │   ├── svc/             # 服务上下文（依赖注入）
+│       │   └── types/           # 请求/响应类型
+│       └── rpc/                 # gRPC 服务
+│           ├── pb/              # Protocol Buffer 生成代码
+│           ├── server/          # gRPC 服务实现
+│           ├── logic/           # 业务逻辑
+│           └── svc/             # 服务上下文
+├── rpc/                         # Proto 文件定义
+│   └── knowledge.proto
 ├── api/                         # API 定义文件
 │   └── knowledge.api
 ├── etc/                         # 配置文件
-│   └── knowledge.yaml
+│   ├── knowledge.yaml           # REST API 配置
+│   └── knowledge-rpc.yaml       # gRPC 服务配置
+├── examples/                    # 示例代码
+│   └── grpc_client/            # gRPC 客户端示例
 ├── scripts/                     # 脚本文件
 │   └── init.sql                # 数据库初始化脚本
 ├── go.mod
@@ -110,6 +122,8 @@ UseMemory: true
 ```
 
 ### 3. 运行项目
+
+**启动 REST API 服务（端口 8888）**
 ```bash
 # 方式一：使用 make
 make run
@@ -118,7 +132,16 @@ make run
 go run cmd/api/main.go -f etc/knowledge.yaml
 ```
 
-### 4. 访问 API
+**启动 gRPC 服务（端口 9999）**
+```bash
+# 方式一：使用 make
+make run-rpc
+
+# 方式二：直接运行
+go run cmd/rpc/main.go -f etc/knowledge-rpc.yaml
+```
+
+### 4. 访问 REST API
 ```bash
 # 创建知识库
 curl -X POST http://localhost:8888/api/v1/knowledge \
@@ -151,6 +174,65 @@ curl http://localhost:8888/api/v1/knowledge/{id}/documents
 curl -X DELETE http://localhost:8888/api/v1/knowledge/{id}/documents/{doc_id}
 ```
 
+### 5. 访问 gRPC 接口
+
+本项目提供了两个 gRPC 接口来演示 go-zero + DDD 中 gRPC 的正确使用方式：
+
+**使用 grpcurl 测试（需要先安装）**
+```bash
+# 创建知识库（演示 Command 操作）
+grpcurl -plaintext \
+  -d '{"name":"gRPC测试知识库","description":"通过gRPC创建"}' \
+  localhost:9999 knowledge.KnowledgeService/CreateKnowledgeBase
+
+# 获取知识库详情（演示 Query 操作）
+grpcurl -plaintext \
+  -d '{"id":"<知识库ID>","include_documents":true}' \
+  localhost:9999 knowledge.KnowledgeService/GetKnowledgeBase
+```
+
+**使用 Go 客户端示例**
+```bash
+# 先启动 gRPC 服务
+make run-rpc
+
+# 在另一个终端运行客户端示例
+go run examples/grpc_client/main.go
+```
+
+## 🔄 gRPC + DDD 架构说明
+
+### gRPC 请求处理流程
+
+```
+gRPC Request 
+  → Server (实现 gRPC 接口) 
+  → Logic (业务逻辑协调) 
+  → Command/Query Handler (应用层) 
+  → Domain Service (领域服务) 
+  → Repository (仓储) 
+  → Database
+```
+
+### gRPC 分层职责
+
+| 层级 | 目录 | 职责 |
+|------|------|------|
+| Proto 定义 | `rpc/` | 定义 gRPC 接口和消息 |
+| PB 代码 | `interfaces/rpc/pb/` | Protocol Buffer 生成代码 |
+| Server 层 | `interfaces/rpc/server/` | 实现 gRPC 接口，创建 Logic |
+| Logic 层 | `interfaces/rpc/logic/` | 协调业务逻辑，调用应用层 |
+| 应用层 | `application/command/query/` | CQRS 模式的命令/查询处理 |
+| 领域层 | `domain/` | 核心业务逻辑 |
+| 基础设施层 | `infrastructure/` | 数据持久化实现 |
+
+### 关键设计原则
+
+1. **Logic 是请求级别的**：每个 gRPC 请求创建一个新的 Logic 实例
+2. **复用应用层**：gRPC 和 REST API 共享相同的 Command/Query Handler
+3. **DTO 转换在接口层**：Protobuf ↔ DTO 的转换发生在 Logic 层
+4. **领域层不知道传输协议**：领域实体和服务与 gRPC/REST 无关
+
 ## 🗄️ 数据库设计
 
 ### knowledge_bases 表
@@ -173,6 +255,57 @@ curl -X DELETE http://localhost:8888/api/v1/knowledge/{id}/documents/{doc_id}
 | created_at | DATETIME | 创建时间 |
 | updated_at | DATETIME | 更新时间 |
 
+## 🔄 事务管理最佳实践
+
+### 工作单元模式 (Unit of Work)
+
+事务管理是 DDD 中的重要话题。本项目采用**工作单元模式**来抽象事务操作：
+
+```
+domain/repository/unit_of_work.go     <- 接口定义（领域层）
+infrastructure/persistence/gorm_unit_of_work.go  <- GORM实现（基础设施层）
+```
+
+### 事务使用原则
+
+1. **事务在应用层控制**：领域层不应该知道事务的存在
+2. **通过上下文传递事务**：使用 `context.Context` 传递事务连接
+3. **仓储自动感知事务**：仓储实现从上下文获取事务连接
+
+### 代码示例
+
+```go
+// 应用层：在事务中执行多个操作
+func (h *MergeKnowledgeBasesHandler) Handle(ctx context.Context, cmd *MergeKnowledgeBasesCommand) error {
+    // 使用工作单元执行事务
+    return h.unitOfWork.Transaction(ctx, func(txCtx context.Context) error {
+        // 所有操作都在同一个事务中
+        // 使用 txCtx 调用仓储方法
+        
+        docs, _ := h.docRepo.FindByKnowledgeBaseID(txCtx, sourceID)
+        
+        for _, doc := range docs {
+            h.docRepo.Save(txCtx, newDoc)  // 使用事务连接
+            h.docRepo.Delete(txCtx, doc.ID())
+        }
+        
+        h.kbRepo.Delete(txCtx, sourceID)
+        
+        return nil  // 返回 nil 自动提交，返回 error 自动回滚
+    })
+}
+```
+
+### 合并知识库 API（事务演示）
+
+```bash
+# 将知识库A的所有文档移动到知识库B，然后删除知识库A
+# 此操作在事务中执行，要么全部成功，要么全部失败
+curl -X POST http://localhost:8888/api/v1/knowledge/merge \
+  -H "Content-Type: application/json" \
+  -d '{"source_id": "知识库A的ID", "target_id": "知识库B的ID"}'
+```
+
 ## 🔑 核心设计原则
 
 ### 1. 依赖倒置原则
@@ -181,8 +314,8 @@ curl -X DELETE http://localhost:8888/api/v1/knowledge/{id}/documents/{doc_id}
 - 仓储接口定义在领域层，实现在基础设施层
 
 ```
-domain/repository/         <- 接口定义
-infrastructure/persistence/ <- 具体实现（MySQL/Memory）
+domain/repository/         <- 接口定义（包括 UnitOfWork）
+infrastructure/persistence/ <- 具体实现（GORM/Memory）
 ```
 
 ### 2. 聚合根设计

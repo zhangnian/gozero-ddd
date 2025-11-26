@@ -15,6 +15,7 @@ func RegisterRoutes(server *rest.Server, svcCtx *svc.ServiceContext) {
 	// 创建处理器
 	kbHandler := handler.NewKnowledgeBaseHandler(svcCtx)
 	docHandler := handler.NewDocumentHandler(svcCtx)
+	mergeHandler := handler.NewMergeHandler(svcCtx)
 
 	// 创建中间件
 	loggingMiddleware := middleware.NewLoggingMiddleware()
@@ -49,6 +50,12 @@ func RegisterRoutes(server *rest.Server, svcCtx *svc.ServiceContext) {
 					Path:    "/api/v1/knowledge/:id",
 					Handler: kbHandler.Delete,
 				},
+				// 合并知识库（事务演示）
+				{
+					Method:  http.MethodPost,
+					Path:    "/api/v1/knowledge/merge",
+					Handler: mergeHandler.MergeKnowledgeBases,
+				},
 			}...,
 		),
 	)
@@ -77,4 +84,3 @@ func RegisterRoutes(server *rest.Server, svcCtx *svc.ServiceContext) {
 		),
 	)
 }
-

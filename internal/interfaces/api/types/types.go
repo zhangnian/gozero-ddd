@@ -26,6 +26,12 @@ type DeleteKnowledgeBaseRequest struct {
 	ID string `path:"id"`
 }
 
+// MergeKnowledgeBasesRequest 合并知识库请求
+type MergeKnowledgeBasesRequest struct {
+	SourceID string `json:"source_id"` // 源知识库ID（将被删除）
+	TargetID string `json:"target_id"` // 目标知识库ID（保留）
+}
+
 // KnowledgeBaseResponse 知识库响应
 type KnowledgeBaseResponse struct {
 	Code    int         `json:"code"`
@@ -86,4 +92,3 @@ func NewErrorResponse(code int, message string) *BaseResponse {
 		Message: message,
 	}
 }
-

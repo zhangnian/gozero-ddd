@@ -1,0 +1,71 @@
+// 知识库管理系统 gRPC 接口定义
+// 演示 go-zero + DDD 中 gRPC 服务的正确使用方式
+
+syntax = "proto3";
+
+package knowledge;
+
+option go_package = "./pb";
+
+// KnowledgeService 知识库 gRPC 服务
+// 演示了两个典型的 gRPC 接口：
+// 1. GetKnowledgeBase - 简单查询接口
+// 2. CreateKnowledgeBase - 命令接口（带业务验证）
+service KnowledgeService {
+  // GetKnowledgeBase 获取知识库详情
+  // 演示：简单的查询操作，通过 Query Handler 获取数据
+  rpc GetKnowledgeBase(GetKnowledgeBaseRequest) returns (GetKnowledgeBaseResponse);
+  
+  // CreateKnowledgeBase 创建知识库
+  // 演示：命令操作，通过 Command Handler 执行业务逻辑
+  rpc CreateKnowledgeBase(CreateKnowledgeBaseRequest) returns (CreateKnowledgeBaseResponse);
+}
+
+// ==================== 请求和响应消息定义 ====================
+
+// GetKnowledgeBaseRequest 获取知识库请求
+message GetKnowledgeBaseRequest {
+  string id = 1;                    // 知识库 ID
+  bool include_documents = 2;       // 是否包含文档列表
+}
+
+// GetKnowledgeBaseResponse 获取知识库响应
+message GetKnowledgeBaseResponse {
+  KnowledgeBase knowledge_base = 1; // 知识库信息
+}
+
+// CreateKnowledgeBaseRequest 创建知识库请求
+message CreateKnowledgeBaseRequest {
+  string name = 1;                  // 知识库名称（必填）
+  string description = 2;           // 知识库描述（可选）
+}
+
+// CreateKnowledgeBaseResponse 创建知识库响应
+message CreateKnowledgeBaseResponse {
+  KnowledgeBase knowledge_base = 1; // 创建的知识库信息
+}
+
+// ==================== 数据模型定义 ====================
+
+// KnowledgeBase 知识库信息
+message KnowledgeBase {
+  string id = 1;                    // 唯一标识
+  string name = 2;                  // 名称
+  string description = 3;           // 描述
+  int32 document_count = 4;         // 文档数量
+  repeated Document documents = 5;  // 文档列表（可选）
+  int64 created_at = 6;             // 创建时间（Unix 时间戳）
+  int64 updated_at = 7;             // 更新时间（Unix 时间戳）
+}
+
+// Document 文档信息
+message Document {
+  string id = 1;                    // 唯一标识
+  string knowledge_base_id = 2;     // 所属知识库 ID
+  string title = 3;                 // 标题
+  string content = 4;               // 内容
+  repeated string tags = 5;         // 标签列表
+  int64 created_at = 6;             // 创建时间（Unix 时间戳）
+  int64 updated_at = 7;             // 更新时间（Unix 时间戳）
+}
+
