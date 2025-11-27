@@ -19,7 +19,6 @@ import (
 // InfraConfig 基础设施配置接口
 // 定义基础设施层初始化所需的配置
 type InfraConfig interface {
-	IsUseMemory() bool
 	GetMySQLDataSource() string
 	IsAutoMigrate() bool
 }
@@ -64,53 +63,44 @@ func NewInfrastructureContainer(cfg InfraConfig) *InfrastructureContainer {
 
 // initStorage 初始化存储层
 func (c *InfrastructureContainer) initStorage(cfg InfraConfig) {
-	if cfg.IsUseMemory() {
-		// 使用内存仓储（开发测试用）
-		log.Println("📦 [Infrastructure] 使用内存存储")
-		c.KnowledgeBaseRepo = persistence.NewMemoryKnowledgeBaseRepository()
-		c.DocumentRepo = persistence.NewMemoryDocumentRepository()
-		c.UnitOfWork = persistence.NewMemoryUnitOfWork()
-	} else {
-		// 使用 GORM + MySQL（生产环境）
-		log.Println("📦 [Infrastructure] 使用 MySQL 存储 (GORM)")
+	log.Println("📦 [Infrastructure] 初始化 MySQL 存储 (GORM)")
 
-		dataSource := cfg.GetMySQLDataSource()
-		if dataSource == "" {
-			log.Fatal("❌ MySQL DataSource 未配置")
-		}
-
-		// 创建 GORM 数据库连接
-		var err error
-		c.db, err = gorm.Open(mysql.Open(dataSource), &gorm.Config{
-			Logger: logger.Default.LogMode(logger.Info),
-		})
-		if err != nil {
-			log.Fatalf("❌ 连接数据库失败: %v", err)
-		}
-
-		// 自动迁移表结构（开发环境使用）
-		if cfg.IsAutoMigrate() {
-			log.Println("🔄 [Infrastructure] 自动迁移数据库表结构...")
-			if err := c.db.AutoMigrate(&model.KnowledgeBaseModel{}, &model.DocumentModel{}); err != nil {
-				log.Fatalf("❌ 数据库迁移失败: %v", err)
-			}
-		}
-
-		// 创建工作单元（事务管理）
-		c.UnitOfWork = persistence.NewGormUnitOfWork(c.db)
-
-		// 创建仓储实例
-		c.DocumentRepo = persistence.NewGormDocumentRepository(c.db)
-		c.KnowledgeBaseRepo = persistence.NewGormKnowledgeBaseRepository(c.db, c.DocumentRepo)
+	dataSource := cfg.GetMySQLDataSource()
+	if dataSource == "" {
+		log.Fatal("❌ MySQL DataSource 未配置")
 	}
+
+	// 创建 GORM 数据库连接
+	var err error
+	c.db, err = gorm.Open(mysql.Open(dataSource), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
+	if err != nil {
+		log.Fatalf("❌ 连接数据库失败: %v", err)
+	}
+
+	// 自动迁移表结构（开发环境使用）
+	if cfg.IsAutoMigrate() {
+		log.Println("🔄 [Infrastructure] 自动迁移数据库表结构...")
+		if err := c.db.AutoMigrate(&model.KnowledgeBaseModel{}, &model.DocumentModel{}); err != nil {
+			log.Fatalf("❌ 数据库迁移失败: %v", err)
+		}
+	}
+
+	// 创建工作单元（事务管理）
+	c.UnitOfWork = persistence.NewGormUnitOfWork(c.db)
+
+	// 创建仓储实例
+	c.DocumentRepo = persistence.NewGormDocumentRepository(c.db)
+	c.KnowledgeBaseRepo = persistence.NewGormKnowledgeBaseRepository(c.db, c.DocumentRepo)
 
 	log.Println("✅ [Infrastructure] 存储层初始化完成")
 }
 
 // initEventBus 初始化事件总线
 func (c *InfrastructureContainer) initEventBus() {
-	// 创建事件总线
-	c.EventBus = eventbus.NewMemoryEventBus()
+	// 使用同步事件总线
+	c.EventBus = eventbus.NewSyncEventBus()
 
 	// 注册事件处理器
 	c.registerEventHandlers()

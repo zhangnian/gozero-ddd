@@ -19,9 +19,6 @@ Log:
 # 超时配置（毫秒）
 Timeout: 30000
 
-# 是否使用内存存储（开发测试用，生产环境请设为 false）
-UseMemory: false
-
 # MySQL 配置 (GORM)
 MySQL:
   # 数据源 DSN 格式: user:password@tcp(host:port)/database?charset=utf8mb4&parseTime=True&loc=Local
@@ -34,4 +31,3 @@ MySQL:
 #   Hosts:
 #     - 127.0.0.1:2379
 #   Key: knowledge.rpc
-

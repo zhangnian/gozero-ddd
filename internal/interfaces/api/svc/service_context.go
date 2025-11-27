@@ -64,10 +64,6 @@ type configAdapter struct {
 	config.Config
 }
 
-func (a *configAdapter) IsUseMemory() bool {
-	return a.UseMemory
-}
-
 func (a *configAdapter) GetMySQLDataSource() string {
 	return a.MySQL.DataSource
 }

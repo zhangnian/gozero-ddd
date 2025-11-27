@@ -64,10 +64,6 @@ type rpcConfigAdapter struct {
 	config.RpcConfig
 }
 
-func (a *rpcConfigAdapter) IsUseMemory() bool {
-	return a.UseMemory
-}
-
 func (a *rpcConfigAdapter) GetMySQLDataSource() string {
 	return a.MySQL.DataSource
 }

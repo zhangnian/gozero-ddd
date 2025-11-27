@@ -25,9 +25,6 @@ Timeout: 30000
 # 最大请求体大小（字节）
 MaxBytes: 10485760  # 10MB
 
-# 是否使用内存存储（开发测试用，生产环境请设为 false）
-UseMemory: false
-
 # MySQL 配置 (GORM)
 MySQL:
   # 数据源 DSN 格式: user:password@tcp(host:port)/database?charset=utf8mb4&parseTime=True&loc=Local
@@ -42,7 +39,7 @@ MySQL:
 #   DB: 0
 
 # ==================== Kafka 领域事件配置 ====================
-# 是否启用 Kafka 事件总线（默认使用内存事件总线）
+# 是否启用 Kafka 事件总线（默认使用同步事件总线）
 UseKafka: false
 
 # Kafka 配置
