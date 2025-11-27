@@ -37,7 +37,8 @@ func (h *DocumentHandler) Add(w http.ResponseWriter, r *http.Request) {
 		Tags:            req.Tags,
 	}
 
-	result, err := h.svcCtx.AddDocumentHandler.Handle(r.Context(), cmd)
+	// 通过应用层容器访问命令处理器
+	result, err := h.svcCtx.App.Commands.AddDocument.Handle(r.Context(), cmd)
 	if err != nil {
 		code := interfaces.HTTPErrorCode(err)
 		httpx.WriteJson(w, code, types.NewErrorResponse(code, err.Error()))
@@ -59,7 +60,8 @@ func (h *DocumentHandler) List(w http.ResponseWriter, r *http.Request) {
 		KnowledgeBaseID: req.KnowledgeBaseID,
 	}
 
-	result, err := h.svcCtx.ListDocumentsHandler.Handle(r.Context(), qry)
+	// 通过应用层容器访问查询处理器
+	result, err := h.svcCtx.App.Queries.ListDocuments.Handle(r.Context(), qry)
 	if err != nil {
 		code := interfaces.HTTPErrorCode(err)
 		httpx.WriteJson(w, code, types.NewErrorResponse(code, err.Error()))
@@ -82,7 +84,8 @@ func (h *DocumentHandler) Remove(w http.ResponseWriter, r *http.Request) {
 		DocumentID:      req.DocumentID,
 	}
 
-	if err := h.svcCtx.RemoveDocumentHandler.Handle(r.Context(), cmd); err != nil {
+	// 通过应用层容器访问命令处理器
+	if err := h.svcCtx.App.Commands.RemoveDocument.Handle(r.Context(), cmd); err != nil {
 		code := interfaces.HTTPErrorCode(err)
 		httpx.WriteJson(w, code, types.NewErrorResponse(code, err.Error()))
 		return

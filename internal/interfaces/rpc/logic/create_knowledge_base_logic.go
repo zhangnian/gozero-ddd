@@ -47,14 +47,14 @@ func (l *CreateKnowledgeBaseLogic) CreateKnowledgeBase(req *pb.CreateKnowledgeBa
 		Description: req.Description,
 	}
 
-	// 调用应用层的 Command Handler
+	// 通过应用层容器访问命令处理器
 	// Command Handler 职责：
 	// - 验证参数格式
 	// - 调用领域服务执行业务逻辑
 	// - 领域服务会验证业务规则（如名称唯一性）
 	// - 通过仓储持久化领域实体
 	// - 返回 DTO（而非领域实体，保护领域层封装）
-	result, err := l.svcCtx.CreateKnowledgeBaseHandler.Handle(l.ctx, cmd)
+	result, err := l.svcCtx.App.Commands.CreateKnowledgeBase.Handle(l.ctx, cmd)
 	if err != nil {
 		l.Logger.Errorf("❌ 创建知识库失败: %v", err)
 		// 使用统一的错误转换函数

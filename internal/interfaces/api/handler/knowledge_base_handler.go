@@ -35,7 +35,8 @@ func (h *KnowledgeBaseHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Description: req.Description,
 	}
 
-	result, err := h.svcCtx.CreateKnowledgeBaseHandler.Handle(r.Context(), cmd)
+	// 通过应用层容器访问命令处理器
+	result, err := h.svcCtx.App.Commands.CreateKnowledgeBase.Handle(r.Context(), cmd)
 	if err != nil {
 		code := interfaces.HTTPErrorCode(err)
 		httpx.WriteJson(w, code, types.NewErrorResponse(code, err.Error()))
@@ -59,7 +60,8 @@ func (h *KnowledgeBaseHandler) Update(w http.ResponseWriter, r *http.Request) {
 		Description: req.Description,
 	}
 
-	result, err := h.svcCtx.UpdateKnowledgeBaseHandler.Handle(r.Context(), cmd)
+	// 通过应用层容器访问命令处理器
+	result, err := h.svcCtx.App.Commands.UpdateKnowledgeBase.Handle(r.Context(), cmd)
 	if err != nil {
 		code := interfaces.HTTPErrorCode(err)
 		httpx.WriteJson(w, code, types.NewErrorResponse(code, err.Error()))
@@ -82,7 +84,8 @@ func (h *KnowledgeBaseHandler) Get(w http.ResponseWriter, r *http.Request) {
 		IncludeDocuments: req.IncludeDocuments,
 	}
 
-	result, err := h.svcCtx.GetKnowledgeBaseHandler.Handle(r.Context(), qry)
+	// 通过应用层容器访问查询处理器
+	result, err := h.svcCtx.App.Queries.GetKnowledgeBase.Handle(r.Context(), qry)
 	if err != nil {
 		code := interfaces.HTTPErrorCode(err)
 		httpx.WriteJson(w, code, types.NewErrorResponse(code, err.Error()))
@@ -96,7 +99,8 @@ func (h *KnowledgeBaseHandler) Get(w http.ResponseWriter, r *http.Request) {
 func (h *KnowledgeBaseHandler) List(w http.ResponseWriter, r *http.Request) {
 	qry := &query.ListKnowledgeBasesQuery{}
 
-	result, err := h.svcCtx.ListKnowledgeBasesHandler.Handle(r.Context(), qry)
+	// 通过应用层容器访问查询处理器
+	result, err := h.svcCtx.App.Queries.ListKnowledgeBases.Handle(r.Context(), qry)
 	if err != nil {
 		code := interfaces.HTTPErrorCode(err)
 		httpx.WriteJson(w, code, types.NewErrorResponse(code, err.Error()))
@@ -118,7 +122,8 @@ func (h *KnowledgeBaseHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		ID: req.ID,
 	}
 
-	if err := h.svcCtx.DeleteKnowledgeBaseHandler.Handle(r.Context(), cmd); err != nil {
+	// 通过应用层容器访问命令处理器
+	if err := h.svcCtx.App.Commands.DeleteKnowledgeBase.Handle(r.Context(), cmd); err != nil {
 		code := interfaces.HTTPErrorCode(err)
 		httpx.WriteJson(w, code, types.NewErrorResponse(code, err.Error()))
 		return

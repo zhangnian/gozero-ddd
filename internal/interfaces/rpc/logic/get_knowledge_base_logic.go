@@ -42,12 +42,12 @@ func (l *GetKnowledgeBaseLogic) GetKnowledgeBase(req *pb.GetKnowledgeBaseRequest
 		IncludeDocuments: req.IncludeDocuments,
 	}
 
-	// 调用应用层的 Query Handler
+	// 通过应用层容器访问查询处理器
 	// Query Handler 负责：
 	// - 验证参数格式
 	// - 通过仓储获取领域实体
 	// - 将领域实体转换为 DTO
-	result, err := l.svcCtx.GetKnowledgeBaseHandler.Handle(l.ctx, qry)
+	result, err := l.svcCtx.App.Queries.GetKnowledgeBase.Handle(l.ctx, qry)
 	if err != nil {
 		l.Logger.Errorf("❌ 获取知识库失败: %v", err)
 		// 使用统一的错误转换函数

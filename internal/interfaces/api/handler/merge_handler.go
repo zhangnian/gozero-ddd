@@ -37,7 +37,8 @@ func (h *MergeHandler) MergeKnowledgeBases(w http.ResponseWriter, r *http.Reques
 		TargetID: req.TargetID,
 	}
 
-	result, err := h.svcCtx.MergeKnowledgeBasesHandler.Handle(r.Context(), cmd)
+	// 通过应用层容器访问命令处理器
+	result, err := h.svcCtx.App.Commands.MergeKnowledgeBases.Handle(r.Context(), cmd)
 	if err != nil {
 		// 使用统一的错误转换函数
 		code := interfaces.HTTPErrorCode(err)
